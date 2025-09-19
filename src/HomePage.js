@@ -167,7 +167,7 @@ export default function App() {
                 
                 <div style={styles.navButtons}>
                     <Link to="/Signup" style={{...styles.button, ...styles.buttonPrimary}}>Sign Up </Link>
-                    <Link to="/Login" style={{...styles.button, ...styles.buttonPrimary}}>Log in</Link>
+                    <Link to="/Login" style={{...styles.button, ...styles.buttonPrimary}}>Log in/Sign in</Link>
                 </div>
 
             </nav>
