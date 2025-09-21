@@ -65,7 +65,7 @@ export default function LoginPage() {
             // Render the Google Sign-in button into the specified container div
             window.google.accounts.id.renderButton(
                 document.getElementById("google-button-container"),
-                { theme: "filled_blue", size: "large", text: "continue_with", shape: "rectangular" ,width:340}
+                { theme:"filled_blue", size: "large", text: "continue_with", shape: "rectangular" ,width:420}
             );
         }
     }, []); // Empty dependency array means this effect runs once on mount
@@ -110,9 +110,9 @@ export default function LoginPage() {
         input: { width: '100%', padding: '0.9rem 1rem', border: '1px solid #E5E7EB', backgroundColor: '#F9FAFB', borderRadius: '8px', fontSize: '1rem', marginBottom: '1rem', boxSizing: 'border-box', transition: 'box-shadow 0.2s, border-color 0.2s' },
         button: { width: '100%', padding: '0.9rem 1rem', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' },
         primaryButton: { backgroundColor: '#8B5CF6', color: 'white' },
-        googleButton: { backgroundColor: '#F3F4F6', color: '#1F2937', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' },
-        separator: { display: 'flex', alignItems: 'center', textAlign: 'center', color: '#9CA3AF', margin: '1.5rem 0' },
-        separatorLine: { flex: 1, borderBottom: '1px solid #E5E7EB' },
+        googleButton: { backgroundColor: '#8B5CF6', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' },
+        separator: { display: 'flex', alignItems: 'center', textAlign: 'center', color: '#8B5CF6', margin: '1.5rem 0' },
+        separatorLine: { flex: 1, borderBottom: '1px solid #8B5CF6' },
         separatorText: { padding: '0 1rem' },
         signupLinkContainer: { textAlign: 'center', marginTop: '1.5rem', color: '#6B7280' },
         signupLink: { color: '#8B5CF6', fontWeight: '500', textDecoration: 'none' },
@@ -127,8 +127,16 @@ export default function LoginPage() {
             70% { transform: scale(0.9) translateY(0); }
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
+            /* Custom Google Button Override */
+    #google-button-container div[role="button"] {
+      background-color: #8d60f6ff !important;
+      color: #ffffff !important;
+      border-radius: 8px !important;
+      border: none !important;
+      font-weight: 600 !important;
+    }
         @keyframes blob-float { from { transform: translateY(0px) scale(1); } to { transform: translateY(-20px) scale(1.1); } }
-        .nav-link:hover { color: #111827; }
+        .nav-link:hover { color: #8B5CF6; }
         .form-button:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(0,0,0,0.1); }
         .input-focus:focus { border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); outline: none; }
         .signup-link:hover { text-decoration: underline; }

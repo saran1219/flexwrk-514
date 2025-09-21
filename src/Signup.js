@@ -52,24 +52,19 @@ function SignUpPage() {
   }, []);
 
   useEffect(() => {
-    // Check if the google.accounts.id object exists before initializing
     if (window.google) {
-      // Initialize the Google Identity Services client
       window.google.accounts.id.initialize({
         client_id: "623498140904-vmi90bvl88sv1rmbonjgrhuuvbmmjn4o.apps.googleusercontent.com",
         callback: handleCredentialResponse,
       });
 
-      // Render the Google Sign-in button into the specified container div
       window.google.accounts.id.renderButton(
         document.getElementById("google-button-container"),
-        { theme: "filled_blue", size: "large", text: "continue_with", shape: "rectangular" }
+        { theme: "outline", size: "large", text: "continue_with", shape: "rectangular" }
       );
     }
-  }, []); // Empty dependency array means this effect runs once on mount
+  }, []);
 
-
-  
   const styles = {
     container: {
       display: 'flex',
@@ -134,8 +129,8 @@ function SignUpPage() {
       margin: '1rem 0',
       borderRadius: '8px',
       border: 'none',
-      backgroundColor: '#C4B5FD',
-      color: '#4C1D95',
+      backgroundColor: '#8B5CF6',
+      color: '#ffffff',
       fontSize: '1rem',
       fontWeight: '600',
       cursor: 'pointer',
@@ -162,6 +157,14 @@ function SignUpPage() {
       0% { transform: translateY(0px); }
       50% { transform: translateY(-15px); }
       100% { transform: translateY(0px); }
+    }
+    /* Custom Google Button Override */
+    #google-button-container div[role="button"] {
+      background-color: #8B5CF6 !important;
+      color: #ffffff !important;
+      border-radius: 8px !important;
+      border: none !important;
+      font-weight: 600 !important;
     }
   `;
 
@@ -201,7 +204,6 @@ function SignUpPage() {
           </div>
 
           <div style={styles.formElement(0.8)}>
-            {/* The Google button will be rendered into this container */}
             <div id="google-button-container"></div>
           </div>
 
