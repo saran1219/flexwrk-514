@@ -1,6 +1,8 @@
 pipeline {
     agent any // This pipeline can run on any available Jenkins agent
-
+    tools{
+        nodejs 'NodeJS-20' // Ensure Node.js is available
+    }
     stages {
         stage('Build') {
             steps {
