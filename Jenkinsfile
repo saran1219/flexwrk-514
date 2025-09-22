@@ -18,7 +18,7 @@ pipeline {
         sshAgent(credentials: ['nginx-deploy-key']) {
             echo 'Deploying new build to Nginx server...'
             // This command will now use the loaded key for authentication
-            sh 'scp -o StrictHostKeyChecking=no -r build/* ubuntu@13.62.72.157:/var/www/flexwrk/'
+            sh 'scp  -r build/* ubuntu@13.62.72.157:/var/www/flexwrk/'
         }
     }
 }
