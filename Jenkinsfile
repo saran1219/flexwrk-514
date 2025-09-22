@@ -1,27 +1,28 @@
 pipeline {
     agent any // This pipeline can run on any available Jenkins agent
-    tools{
-        nodejs 'NodeJS-20' // Ensure Node.js is available
+	tools {
+        // This tells Jenkins to use the NodeJS tool named 'NodeJS-20'
+        // and add it to the PATH for this pipeline.
+        nodejs 'NodeJS-20' 
     }
+
     stages {
         stage('Build') {
             steps {
                 echo 'Installing dependencies and building React app...'
                 sh 'npm install'
-                sh 'CI=false npm run build'
+                sh 'npm run build'
             }
         }
         
         stage('Deploy to Nginx') {
-    steps {
-        // This 'sshAgent' block loads your key from Jenkins Credentials
-        sshAgent(credentials: ['nginx-deploy-key']) {
-            echo 'Deploying new build to Nginx server...'
-            // This command will now use the loaded key for authentication
-            sh 'scp  -r build/* ubuntu@13.62.72.157:/var/www/flexwrk/'
+            steps {
+                echo 'Deploying new build to Nginx server...'
+                // This command securely copies the build files to the Nginx web directory.
+                // Replace user@your_nginx_server_ip with your server's credentials.
+                sh 'scp -o StrictHostKeyChecking=no -r build/* ubuntu@13.62.72.157:/var/www/flexwrk/
+            }
         }
-    }
-}
     }
     
     post {
