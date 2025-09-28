@@ -61,7 +61,7 @@ export default function App() {
   const headlineText = "Hire the best freelancers for any job, online.".split(" ");
 
   const styles = {
-    container: { fontFamily: '"Poppins", sans-serif', backgroundColor: '#101010ff', color: '#1F2937', overflowX: 'hidden' },
+    container: { fontFamily: '"Poppins", sans-serif', backgroundColor: '#b3f7b5ff', color: '#1F2937', overflowX: 'hidden' },
     header: { display: 'flex', justifyContent: 'center', padding: '1rem 7%', position: 'sticky', top: 0, backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', zIndex: 10 },
     nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1200px' },
     logoContainer: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.5rem', fontWeight: 'bold' },
