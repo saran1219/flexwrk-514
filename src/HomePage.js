@@ -16,7 +16,7 @@ const FlexwrkLogo = () => (
 );
 const ArrowGraphic = () => (
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{position: 'absolute', top: '20px', right: '10px', zIndex: 3, opacity: 0, animation: 'fade-in 1s ease 1s forwards'}}>
-        <path d="M24 12C28 16 36 20 40 16" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M24 12C28 16 36 20 40 16" stroke="#7f56ddff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         <path d="M42 8L40 16L32 14" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
