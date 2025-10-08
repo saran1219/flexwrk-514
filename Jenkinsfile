@@ -20,7 +20,7 @@ pipeline {
                 echo 'Deploying new build to Nginx server...'
                 // This command securely copies the build files to the Nginx web directory.
                 // Replace user@your_nginx_server_ip with your server's credentials.
-                sh 'scp -o StrictHostKeyChecking=no -r build/* root@13.62.63.154:/var/www/flexwrk/'
+                sh 'scp -o StrictHostKeyChecking=no -r build/* root@51.21.230.152:/var/www/flexwrk/'
             }
         }
     }
