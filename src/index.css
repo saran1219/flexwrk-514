@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* src/index.css */
 
 /* 1. A modern CSS reset to remove default browser styles.
@@ -23,18 +22,3 @@ body {
   font-family: "Poppins", sans-serif;
   background-color: #ffffff; /* Default background */
 }
-=======
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
->>>>>>> f3fc5142c0c4f5877fa14b3723abda318133dfc6
