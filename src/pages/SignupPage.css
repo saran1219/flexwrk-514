@@ -1,0 +1,33 @@
+/* src/pages/SignupPage.css */
+
+@keyframes fade-in { 
+  from { opacity: 0; } 
+  to { opacity: 1; } 
+}
+
+@keyframes fade-slide-up { 
+  from { opacity: 0; transform: translateY(20px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+
+@keyframes slide-in-left { 
+  from { opacity: 0; transform: translateX(-50px); } 
+  to { opacity: 1; transform: translateX(0); } 
+}
+
+@keyframes shape-float { 
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(30px, -40px) scale(1.1); }
+}
+
+.form-row { 
+  opacity: 0; 
+  animation: fade-slide-up 0.6s ease forwards; 
+  margin-bottom: 1.5rem; 
+}
+
+/* We need to target the primary button by its style, so we'll give it a class */
+.primary-button:hover { 
+  background-color: #388E3C; 
+  transform: translateY(-2px); 
+}

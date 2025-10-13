@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() { return request.auth != null; }
+
+    // Publicly readable avatars; writes restricted to owner
+    match /avatars/{uid} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Segment attachments uploaded by freelancers
+    // Path convention: attachments/{freelancerId}/projects/{projectId}/segments/{subpath}
+    match /attachments/{uid}/projects/{projectId}/segments/{subPath=**} {
+      // The client is authorized to read via object metadata.clientId
+      allow read, list: if isSignedIn() && (
+        request.auth.uid == uid || request.auth.uid == resource.metadata.clientId
+      );
+      // Only the owning freelancer can upload/delete
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+  }
+}

@@ -1,0 +1,24 @@
+/* src/index.css */
+
+/* 1. A modern CSS reset to remove default browser styles.
+*/
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* This makes layout math more intuitive */
+}
+
+/* 2. Set the core elements to take up 100% of the screen.
+*/
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
+/* 3. Set a base font for your entire application.
+  (You already have this in your component, but it's good practice to have it here too)
+*/
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: #ffffff; /* Default background */
+}

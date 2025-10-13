@@ -1,0 +1,47 @@
+/* src/pages/FreelancerDashboard.css */
+
+@keyframes fade-in { 
+    from { opacity: 0; } 
+    to { opacity: 1; } 
+}
+
+@keyframes fade-slide-up { 
+    from { opacity: 0; transform: translateY(20px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+.nav-item-hover:hover { 
+    background-color: #33691E; 
+}
+
+.portfolio-item:hover .portfolio-image { 
+    transform: scale(1.05); 
+}
+
+.portfolio-item:hover .portfolio-overlay { 
+    opacity: 1; 
+}
+
+.table-row:hover { 
+    background-color: #F9FBE7; 
+}
+
+.message-bubble { 
+    animation: fade-slide-up 0.4s ease forwards; 
+    opacity: 0; 
+}
+
+.job-card { 
+    background-color: #FFFFFF; 
+    border-radius: 12px; 
+    padding: 1.5rem; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+    opacity: 0; 
+    animation: fade-slide-up 0.5s ease forwards; 
+    transition: transform 0.2s ease, box-shadow 0.2s ease; 
+}
+
+.job-card:hover { 
+    transform: translateY(-5px); 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
+}

@@ -1,0 +1,61 @@
+/* src/pages/HomePage.css */
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.nav-link:hover {
+  color: #4c1d95;
+}
+
+.nav-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.action-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(254, 226, 226, 0.8);
+}
+
+.hero-right:hover .background-shape {
+  transform: rotate(20deg) scale(1.05);
+}
+
+.category-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.category-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+}
+
+.category-item:hover .category-image {
+  transform: scale(1.1);
+}
+
+.city-card:hover .city-image {
+  transform: scale(1.1);
+}
+
+.city-card:hover {
+  transform: translateY(-5px) !important;
+}
+
+.social-icon:hover {
+  transform: scale(1.2);
+  color: #FFFFFF;
+}
+
+.footer-link:hover {
+  color: #FFFFFF;
+  padding-left: 5px;
+}
