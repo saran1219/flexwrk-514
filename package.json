@@ -4,11 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "vite build",
+    "test" :"react-scripts test",
+    "eject": "react-scripts eject",
     "lint": "eslint .",
     "preview": "vite preview"
-  },
+
+  }
+  ,
   "dependencies": {
     "firebase": "^12.3.0",
     "react": "^19.1.1",
