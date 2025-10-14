@@ -140,7 +140,7 @@ service cloud.firestore {
     }
 
     // -----------------------------
-    // Chats and Messages
+    // Chats and Messages (Enhanced)
     // -----------------------------
     match /chats/{chatId} {
       allow read, update, delete: if isSignedIn() &&
@@ -159,6 +159,40 @@ service cloud.firestore {
         allow update, delete: if isSignedIn() &&
           request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
+      
+      // Message attachments subcollection
+      match /attachments/{attachmentId} {
+        allow read: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow create: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
+          request.resource.data.uploadedBy == request.auth.uid;
+        allow update, delete: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+
+    // -----------------------------
+    // User Connections (for connected freelancers/clients)
+    // -----------------------------
+    match /connections/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      
+      // Connected users subcollection
+      match /connectedUsers/{connectionId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // -----------------------------
+    // File Uploads Metadata
+    // -----------------------------
+    match /fileUploads/{fileId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && 
+        request.resource.data.uploadedBy == request.auth.uid;
+      allow delete: if isSignedIn() && 
+        resource.data.uploadedBy == request.auth.uid;
     }
 
     // -----------------------------

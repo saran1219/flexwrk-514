@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import ChatPanel from '../components/ChatPanel.jsx';
+import EnhancedChatPanel from '../components/EnhancedChatPanel.jsx';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth, db, storage } from '../firebase.js';
 import { collection, query, where, onSnapshot, orderBy, addDoc, doc, setDoc, getDoc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadMessageAttachment, formatFileSize, isFileTypeAllowed } from '../utils/messagingApi.js';
 
 // --- SVG Icon Components ---
 const FlexwrkLogo = () => (
@@ -213,8 +214,12 @@ const PortfolioView = ({ styles }) => (
 
 const MessagesView = ({ styles }) => {
     return (
-        <div style={{...styles.card('0.2s', 'span 3'), padding: 0}}>
-            <ChatPanel />
+        <div style={{
+            height: 'calc(100vh - 120px)',
+            minHeight: '600px',
+            backgroundColor: 'transparent'
+        }}>
+            <EnhancedChatPanel />
         </div>
     );
 };
@@ -441,6 +446,7 @@ const ManageProjectsView = ({ styles }) => {
     const [segmentDesc, setSegmentDesc] = useState('');
     const [files, setFiles] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     // Track all submitted segments by this freelancer (across projects)
     const [mySegments, setMySegments] = useState([]);
@@ -463,11 +469,8 @@ const ManageProjectsView = ({ styles }) => {
     // Listen to all segments authored by this freelancer (collection group)
     useEffect(() => {
         const uid = auth.currentUser?.uid || 'none';
-        // Use collectionGroup via Firestore SDK imported in Client; here we can read via projects/*/segments
-        // We don't have collectionGroup imported directly, so use per-project aggregation as fallback
         let unsubscribers = [];
         const attach = async () => {
-            // If projects aren't loaded yet, wait a tick
             const list = projects;
             if (!list || list.length === 0) { setMySegments([]); return; }
             // Unsubscribe previous
@@ -496,13 +499,33 @@ const ManageProjectsView = ({ styles }) => {
         return () => { unsubscribers.forEach(u => u()); };
     }, [projects]);
 
+    const handleFileSelect = (event) => {
+        const selectedFiles = Array.from(event.target.files || []);
+        const validFiles = selectedFiles.filter(file => {
+            if (!isFileTypeAllowed(file)) {
+                alert(`File "${file.name}" is not allowed. Please upload images, documents, or archives under 10MB.`);
+                return false;
+            }
+            return true;
+        });
+        setFiles(prev => [...prev, ...validFiles]);
+        event.target.value = ''; // Reset input
+    };
+
+    const removeFile = (index) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
     const submitSegment = async () => {
         if (!auth.currentUser) { alert('Please sign in.'); return; }
         if (!selected) { alert('Please select a project.'); return; }
         if (!segmentTitle.trim()) { alert('Please enter a segment title.'); return; }
+        
         setSaving(true);
+        setUploading(files.length > 0);
+        
         try {
-            // Ensure we have authoritative project data (clientId, title)
+            // Get project data
             let clientId = selected?.clientId || null;
             let projectTitle = selected?.title || 'Project';
             try {
@@ -514,24 +537,29 @@ const ManageProjectsView = ({ styles }) => {
                 }
             } catch (_) {}
 
-            // Upload attachments first so we can include them in the initial document write (avoids update permission issues)
+            // Upload attachments using the enhanced messaging API
             let attachments = [];
             if (files && files.length > 0) {
                 for (const file of files) {
                     try {
-                        const tempId = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-                        const path = `attachments/${auth.currentUser?.uid}/projects/${selected.id}/segments/${tempId}/${file.name}`;
-                        const sref = ref(storage, path);
-                        await uploadBytes(sref, file, { contentType: file.type || 'application/octet-stream', customMetadata: { clientId: clientId || '', projectId: selected.id, freelancerId: auth.currentUser?.uid || '' } });
-                        // Store a compact record to avoid Firestore document size issues; include path for later URL resolution on client
-                        let url = '';
-                        try { url = await getDownloadURL(sref); } catch (_) { /* URL will be resolved in client if missing */ }
-                        attachments.push({ name: file.name, path, url: url || undefined, contentType: file.type || 'application/octet-stream', size: file.size || null });
+                        // Create a temporary chat ID for consistent upload path
+                        const tempChatId = `segment_${selected.id}_${Date.now()}`;
+                        const uploadedFile = await uploadMessageAttachment(file, tempChatId);
+                        attachments.push({
+                            name: uploadedFile.name,
+                            url: uploadedFile.url,
+                            size: uploadedFile.size,
+                            type: uploadedFile.type,
+                            uploadedAt: uploadedFile.uploadedAt
+                        });
                     } catch (e) {
                         console.warn('Attachment upload failed; continuing without this file:', file?.name, e);
+                        alert(`Failed to upload "${file.name}". Continuing with submission.`);
                     }
                 }
             }
+
+            setUploading(false);
 
             await addDoc(collection(db, 'projects', selected.id, 'segments'), {
                 title: segmentTitle.trim(),
@@ -545,14 +573,27 @@ const ManageProjectsView = ({ styles }) => {
                 freelancerId: auth.currentUser?.uid || null
             });
 
-            setSegmentTitle(''); setSegmentDesc(''); setFiles([]);
-            alert('Segment submitted for client approval.');
+            setSegmentTitle(''); 
+            setSegmentDesc(''); 
+            setFiles([]);
+            alert('✅ Segment submitted for client approval!');
+            
         } catch (e) {
             console.error('Submit segment failed', e);
-            const msg = e?.code === 'storage/unauthorized' ? 'Permission denied uploading file. Please ensure Storage rules are published and you are signed in.' : (e?.message || 'Unknown error');
-            alert(`Failed to submit segment: ${msg}`);
+            setUploading(false);
+            
+            let errorMessage = 'Failed to submit segment. Please try again.';
+            if (e?.code === 'storage/unauthorized') {
+                errorMessage = 'Permission denied uploading file. Please ensure you are signed in and try again.';
+            } else if (e?.code === 'permission-denied') {
+                errorMessage = 'Permission denied. Please ensure you have access to this project.';
+            } else if (e?.message) {
+                errorMessage = `Error: ${e.message}`;
+            }
+            alert(`❌ ${errorMessage}`);
         } finally {
             setSaving(false);
+            setUploading(false);
         }
     };
 
@@ -579,18 +620,116 @@ const ManageProjectsView = ({ styles }) => {
             {selected && (
                 <div style={{...styles.card('0.3s', 'span 3')}}>
                     <h3 style={styles.cardTitle}>Propose a Segment</h3>
-                    <div className="form-row"><input style={styles.input} placeholder="Segment title" value={segmentTitle} onChange={(e)=>setSegmentTitle(e.target.value)} /></div>
-                    <div className="form-row"><textarea rows="4" style={styles.textarea} placeholder="Describe the work" value={segmentDesc} onChange={(e)=>setSegmentDesc(e.target.value)} /></div>
-                    <div className="form-row" style={{marginTop: '0.75rem'}}>
-                        <label style={styles.formLabel}>Attach files (optional)</label>
-                        <input type="file" multiple onChange={(e)=>setFiles(Array.from(e.target.files || []))} accept="*/*" />
+                    
+                    {/* Segment Title */}
+                    <div className="form-row" style={{ marginBottom: '1rem' }}>
+                        <label style={styles.formLabel}>Segment Title *</label>
+                        <input 
+                            style={styles.input} 
+                            placeholder="Enter segment title" 
+                            value={segmentTitle} 
+                            onChange={(e)=>setSegmentTitle(e.target.value)} 
+                        />
+                    </div>
+                    
+                    {/* Segment Description */}
+                    <div className="form-row" style={{ marginBottom: '1rem' }}>
+                        <label style={styles.formLabel}>Description</label>
+                        <textarea 
+                            rows="4" 
+                            style={styles.textarea} 
+                            placeholder="Describe the work completed" 
+                            value={segmentDesc} 
+                            onChange={(e)=>setSegmentDesc(e.target.value)} 
+                        />
+                    </div>
+                    
+                    {/* File Upload Section */}
+                    <div className="form-row" style={{ marginBottom: '1.5rem' }}>
+                        <label style={styles.formLabel}>Attach Files (Optional)</label>
+                        <input 
+                            type="file" 
+                            multiple 
+                            onChange={handleFileSelect} 
+                            accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar,.7z,.js,.html,.css,.json,.xml" 
+                            style={{ marginBottom: '0.75rem' }}
+                        />
+                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                            Supported: Images, Documents (PDF, DOC, TXT), Archives (ZIP, RAR), Code files. Max 10MB per file.
+                        </div>
+                        
+                        {/* File Preview */}
                         {files && files.length > 0 && (
-                            <ul style={{ color: '#558B2F', marginTop: '0.5rem' }}>
-                                {files.map((f, i) => (<li key={i}>{f.name}</li>))}
-                            </ul>
+                            <div style={{ 
+                                backgroundColor: '#f8fafc', 
+                                border: '1px solid #e2e8f0', 
+                                borderRadius: '8px', 
+                                padding: '0.75rem',
+                                marginTop: '0.5rem'
+                            }}>
+                                <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                                    {files.length} file{files.length > 1 ? 's' : ''} selected:
+                                </div>
+                                {files.map((file, i) => (
+                                    <div key={i} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '0.5rem',
+                                        backgroundColor: '#ffffff',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '6px',
+                                        marginBottom: '0.5rem'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                borderRadius: '50%',
+                                                backgroundColor: '#10b981'
+                                            }}></div>
+                                            <span style={{ fontSize: '0.9rem' }}>{file.name}</span>
+                                            <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>({formatFileSize(file.size)})</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(i)}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#ef4444',
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem',
+                                                padding: '0.25rem 0.5rem'
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
-                    <button style={{...styles.primaryButton, marginTop:'1rem'}} onClick={submitSegment} disabled={saving}>{saving?'Submitting...':'Submit for Approval'}</button>
+                    
+                    {/* Submit Button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button 
+                            style={{
+                                ...styles.primaryButton, 
+                                opacity: (saving || uploading) ? 0.7 : 1,
+                                cursor: (saving || uploading) ? 'not-allowed' : 'pointer'
+                            }} 
+                            onClick={submitSegment} 
+                            disabled={saving || uploading}
+                        >
+                            {uploading ? '📤 Uploading Files...' : saving ? '⏳ Submitting...' : '🚀 Submit for Approval'}
+                        </button>
+                        
+                        {(saving || uploading) && (
+                            <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                                {uploading ? 'Uploading attachments...' : 'Saving segment...'}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
             {!selected && <p style={{color:'#558B2F'}}>Choose an active project to manage segments.</p>}
@@ -741,7 +880,9 @@ export default function FreelancerDashboard() {
         sendButton: { border: 'none', backgroundColor: '#4CAF50', color: '#FFFFFF', borderRadius: '8px', padding: '0.75rem', marginLeft: '0.5rem', cursor: 'pointer' },
        
         formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' },
+        formLabel: { fontWeight: '600', marginBottom: '0.5rem', display: 'block', color: '#374151' },
         input: { width: '100%', padding: '0.9rem 1rem', border: '1px solid #CBD5E1', backgroundColor: '#F8FAFC', borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' },
+        textarea: { width: '100%', padding: '0.9rem 1rem', border: '1px solid #CBD5E1', backgroundColor: '#F8FAFC', borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' },
         primaryButton: { padding: '0.9rem 1.5rem', backgroundColor: '#3B82F6', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', transition: 'background-color 0.3s ease' },
    
         // Find Jobs View

@@ -1,0 +1,35 @@
+[
+  {
+    "origin": [
+      "http://localhost:5173",
+      "https://flexwrk-10612.web.app",
+      "https://flexwrk-10612.firebaseapp.com"
+    ],
+    "method": [
+      "GET",
+      "HEAD",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "x-goog-resumable",
+      "x-goog-upload-protocol",
+      "x-goog-upload-command",
+      "x-goog-upload-offset",
+      "x-goog-upload-file-name",
+      "x-goog-upload-content-type",
+      "x-goog-upload-header-Content-Type",
+      "x-goog-meta-clientId",
+      "x-goog-meta-projectId",
+      "x-goog-meta-freelancerId",
+      "x-goog-meta-clientid",
+      "x-goog-meta-projectid",
+      "x-goog-meta-freelancerid"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

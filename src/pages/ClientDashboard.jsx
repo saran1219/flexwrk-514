@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import ChatPanel from '../components/ChatPanel.jsx';
+import EnhancedChatPanel from '../components/EnhancedChatPanel.jsx';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth, db, storage } from '../firebase.js';
 import { doc, setDoc, getDoc, collection, addDoc, serverTimestamp, onSnapshot, query, where, updateDoc, orderBy, getDocs, collectionGroup, limit, writeBatch } from 'firebase/firestore';
-import { ref as storageRef, listAll, getDownloadURL } from 'firebase/storage';
-import { ref, uploadBytes } from 'firebase/storage';
+import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
 
 // --- SVG Icon Components ---
 const FlexwrkLogo = () => (
@@ -792,7 +791,7 @@ const ManageProjectView = ({ styles }) => {
                     for (const a of arr) {
                         if (!a || !a.path) continue;
                         try {
-                            const itemRef = storageRef(storage, a.path);
+const itemRef = ref(storage, a.path);
                             const url = await getDownloadURL(itemRef);
                             files.push({ name: a.name || a.path.split('/').pop(), url });
                         } catch (_) { /* ignore individual file errors */ }
@@ -912,8 +911,12 @@ const ToggleSwitch = ({ checked }) => {
 
 const MessagesView = ({ styles }) => {
     return (
-        <div style={{ background: 'transparent' }}>
-            <ChatPanel />
+        <div style={{ 
+            background: 'transparent', 
+            height: 'calc(100vh - 120px)',
+            minHeight: '600px'
+        }}>
+            <EnhancedChatPanel />
         </div>
     );
 };
