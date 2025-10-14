@@ -1,7 +1,7 @@
 // src/pages/SignupPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { auth, db } from '../firebase.js'; // Ensure this path is correct
 import './SignupPage.css';
@@ -34,6 +34,31 @@ const SignupForm = ({ styles }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+
+    // Complete Google redirect if it occurred
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const res = await getRedirectResult(auth);
+                if (res && res.user) {
+                    const user = res.user;
+                    const docRef = doc(db, "users", user.uid);
+                    const docSnap = await getDoc(docRef);
+                    let userRole;
+                    if (!docSnap.exists()) {
+                        userRole = 'freelancer';
+                        await setDoc(docRef, { uid: user.uid, name: user.displayName, email: user.email, userType: userRole, createdAt: serverTimestamp() });
+                    } else {
+                        userRole = docSnap.data().userType;
+                    }
+                    const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
+                    navigate(redirectPath);
+                }
+            } catch (e) {
+                console.warn('No pending Google redirect result for signup.', e);
+            }
+        })();
+    }, [navigate]);
 
     const handleSignup = async (e) => {
         e.preventDefault();
@@ -81,29 +106,47 @@ const SignupForm = ({ styles }) => {
         setLoading(true);
         try {
             const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            if (result) {
-                const user = result.user;
-                const docRef = doc(db, "users", user.uid);
-                const docSnap = await getDoc(docRef);
-                let userRole;
-                if (!docSnap.exists()) {
-                    userRole = userType;
-                    await setDoc(docRef, {
-                        uid: user.uid,
-                        name: user.displayName,
-                        email: user.email,
-                        userType: userRole,
-                        createdAt: serverTimestamp(),
-                    });
-                } else {
-                    userRole = docSnap.data().userType;
+            provider.setCustomParameters({ prompt: 'select_account' });
+            try {
+                const result = await signInWithPopup(auth, provider);
+                if (result) {
+                    const user = result.user;
+                    const docRef = doc(db, "users", user.uid);
+                    const docSnap = await getDoc(docRef);
+                    let userRole;
+                    if (!docSnap.exists()) {
+                        userRole = userType;
+                        await setDoc(docRef, {
+                            uid: user.uid,
+                            name: user.displayName,
+                            email: user.email,
+                            userType: userRole,
+                            createdAt: serverTimestamp(),
+                        });
+                    } else {
+                        userRole = docSnap.data().userType;
+                    }
+                    const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
+                    navigate(redirectPath);
+                    return;
                 }
-                const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
-                navigate(redirectPath);
+            } catch (popupErr) {
+                if (popupErr?.code === 'auth/popup-blocked' || popupErr?.code === 'auth/cancelled-popup-request') {
+                    await signInWithRedirect(auth, provider);
+                    return;
+                }
+                throw popupErr;
             }
         } catch (err) {
-            setError('Failed to sign up with Google. Please try again.');
+            let msg = 'Failed to sign up with Google.';
+            if (err?.code === 'auth/unauthorized-domain') {
+                msg = 'Unauthorized domain. Add http://localhost:5173 to Firebase Auth authorized domains.';
+            } else if (err?.code === 'auth/operation-not-allowed') {
+                msg = 'Google sign-in provider is disabled in Firebase Auth settings.';
+            } else if (err?.code === 'auth/popup-closed-by-user') {
+                msg = 'Popup closed before completing sign up.';
+            }
+            setError(msg);
             console.error("Google Sign-up Error:", err);
         } finally {
             setLoading(false);
