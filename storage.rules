@@ -19,5 +19,11 @@ service firebase.storage {
       // Only the owning freelancer can upload/delete
       allow write: if isSignedIn() && request.auth.uid == uid;
     }
+
+    // Enhanced messaging system file uploads
+    // Path convention: chats/{chatId}/attachments/{userId}_{timestamp}_{filename}
+    match /chats/{chatId}/attachments/{fileName} {
+      allow read, write: if isSignedIn();
+    }
   }
 }
