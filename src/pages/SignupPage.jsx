@@ -175,8 +175,8 @@ const SignupForm = ({ styles }) => {
 export default function SignupPage() {
     // Screen size detection
     const [screenSize, setScreenSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-    const isMobile = screenSize.width <= 768;
-    const isTablet = screenSize.width <= 1024 && screenSize.width > 768;
+    const isMobile = false;
+    const isTablet = false;
 
     useEffect(() => {
         const handleResize = () => {

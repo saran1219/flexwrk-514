@@ -39,8 +39,8 @@ export default function LoginPage() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const isMobile = screenSize.width <= 768;
-    const isTablet = screenSize.width <= 1024 && screenSize.width > 768;
+    const isMobile = false;
+    const isTablet = false;
 
     // Initialize empty credentials
     useEffect(() => {

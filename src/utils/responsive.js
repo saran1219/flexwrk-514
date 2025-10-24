@@ -35,16 +35,14 @@ export const useScreenSize = () => {
 
 // Custom hook for responsive breakpoints
 export const useResponsive = () => {
-  const screenSize = useScreenSize();
-  const width = screenSize.width;
-
+  // Force desktop layout everywhere (disable mobile responsiveness)
   return {
-    isMobile: width <= BREAKPOINTS.mobile,
-    isTablet: width <= BREAKPOINTS.tablet && width > BREAKPOINTS.mobile,
-    isDesktop: width <= BREAKPOINTS.largeDesktop && width > BREAKPOINTS.tablet,
-    isLargeDesktop: width > BREAKPOINTS.largeDesktop,
-    width,
-    height: screenSize.height
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: true,
+    width: 1280,
+    height: 800,
   };
 };
 
