@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, doc, getDoc } from './firebase.js';
 import { auth, db } from './firebase.js';
 
 // Import Pages and Components
 import HomePage from './pages/Homepage';
 import SignupPage from './pages/SignupPage';
 import LoginPage from './pages/LoginPage';
+import ClientLoginPage from './pages/ClientLoginPage';
+import FreelancerLoginPage from './pages/FreelancerLoginPage';
 import FreelancerDashboard from './pages/FreelancerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -21,38 +22,38 @@ function AppContent() {
   const location = useLocation();
 
   useEffect(() => {
-    // This listener from Firebase runs whenever a user signs in or out.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
-          // A user is logged in. Fetch their role from Firestore.
-          const docRef = doc(db, "users", user.uid);
-          console.debug("Fetching user profile:", { uid: user.uid, path: docRef.path });
-          const docSnap = await getDoc(docRef);
-
-          if (docSnap.exists()) {
-            const role = docSnap.data().userType;
-            setCurrentUser(user);
-            setCurrentUserRole(role);
-
-            // If the user is on a public page like login/signup, redirect them.
-            if (location.pathname === '/login' || location.pathname === '/signup') {
-              const redirectPath = role === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
-              navigate(redirectPath);
-            }
+          console.debug("User authenticated:", { uid: user.uid, email: user.email });
+          
+          // Get user profile from Firestore to determine role
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          let userRole = null;
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            userRole = userData.userType || userData.role;
+            console.debug("User role from Firestore:", userRole);
           } else {
-            // This can happen if a user is deleted from Firestore but not from Authentication.
-            console.error("User data not found in Firestore for UID:", user.uid);
-            setCurrentUser(null);
-            setCurrentUserRole(null);
+            console.warn("User document not found in Firestore");
+          }
+          
+          setCurrentUser(user);
+          setCurrentUserRole(userRole);
+
+          // If the user is on a public page like login/signup, redirect them.
+          if (userRole && (location.pathname === '/login' || location.pathname === '/client-login' || location.pathname === '/freelancer-login' || location.pathname === '/signup')) {
+            const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
+            navigate(redirectPath);
           }
         } else {
-          // No user is signed in.
+          console.debug("No user authenticated");
           setCurrentUser(null);
           setCurrentUserRole(null);
         }
       } catch (err) {
-        // Permission or network errors will land here
         console.error("Failed to load user profile document:", err);
         setCurrentUser(null);
         setCurrentUserRole(null);
@@ -60,7 +61,6 @@ function AppContent() {
         setLoading(false);
       }
     });
-    // Cleanup the listener when the component unmounts.
     return () => unsubscribe();
   }, [navigate, location.pathname]);
 
@@ -74,6 +74,8 @@ function AppContent() {
       <Route path="/" element={<HomePage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/client-login" element={<ClientLoginPage />} />
+      <Route path="/freelancer-login" element={<FreelancerLoginPage />} />
       
       {/* Protected Routes - Only accessible to logged-in users with the correct role */}
       <Route 

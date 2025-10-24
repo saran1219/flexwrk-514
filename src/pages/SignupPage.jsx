@@ -1,9 +1,9 @@
 // src/pages/SignupPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { auth, db } from '../firebase.js'; // Ensure this path is correct
+import { createUserWithEmailAndPassword, signInWithPopup } from "../firebase.js";
+import { doc, setDoc, serverTimestamp, getDoc } from "../firebase.js";
+import { auth, db, googleProvider } from '../firebase.js'; // Ensure this path is correct
 import './SignupPage.css';
 
 // --- SVG Icon Components ---
@@ -35,30 +35,12 @@ const SignupForm = ({ styles }) => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    // Complete Google redirect if it occurred
+    // Initialize demo data
     React.useEffect(() => {
-        (async () => {
-            try {
-                const res = await getRedirectResult(auth);
-                if (res && res.user) {
-                    const user = res.user;
-                    const docRef = doc(db, "users", user.uid);
-                    const docSnap = await getDoc(docRef);
-                    let userRole;
-                    if (!docSnap.exists()) {
-                        userRole = 'freelancer';
-                        await setDoc(docRef, { uid: user.uid, name: user.displayName, email: user.email, userType: userRole, createdAt: serverTimestamp() });
-                    } else {
-                        userRole = docSnap.data().userType;
-                    }
-                    const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
-                    navigate(redirectPath);
-                }
-            } catch (e) {
-                console.warn('No pending Google redirect result for signup.', e);
-            }
-        })();
-    }, [navigate]);
+        setName('Demo User');
+        setEmail('newuser@demo.com');
+        setPassword('password123');
+    }, []);
 
     const handleSignup = async (e) => {
         e.preventDefault();
@@ -105,53 +87,42 @@ const SignupForm = ({ styles }) => {
         setError('');
         setLoading(true);
         try {
-            const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            try {
-                const result = await signInWithPopup(auth, provider);
-                if (result) {
-                    const user = result.user;
-                    const docRef = doc(db, "users", user.uid);
-                    const docSnap = await getDoc(docRef);
-                    let userRole;
-                    if (!docSnap.exists()) {
-                        userRole = userType;
-                        await setDoc(docRef, {
-                            uid: user.uid,
-                            name: user.displayName,
-                            email: user.email,
-                            userType: userRole,
-                            createdAt: serverTimestamp(),
-                        });
-                    } else {
-                        userRole = docSnap.data().userType;
-                    }
-                    const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
-                    navigate(redirectPath);
-                    return;
-                }
-            } catch (popupErr) {
-                if (popupErr?.code === 'auth/popup-blocked' || popupErr?.code === 'auth/cancelled-popup-request') {
-                    await signInWithRedirect(auth, provider);
-                    return;
-                }
-                throw popupErr;
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            // Create profile doc if missing, use selected userType
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            if (!snap.exists()) {
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    name: user.displayName || name || '',
+                    email: user.email || email || '',
+                    userType,
+                    createdAt: serverTimestamp(),
+                });
             }
+            const redirectPath = (userType || 'freelancer') === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
+            navigate(redirectPath);
         } catch (err) {
-            let msg = 'Failed to sign up with Google.';
-            if (err?.code === 'auth/unauthorized-domain') {
-                msg = 'Unauthorized domain. Add http://localhost:5173 to Firebase Auth authorized domains.';
-            } else if (err?.code === 'auth/operation-not-allowed') {
-                msg = 'Google sign-in provider is disabled in Firebase Auth settings.';
-            } else if (err?.code === 'auth/popup-closed-by-user') {
-                msg = 'Popup closed before completing sign up.';
-            }
-            setError(msg);
-            console.error("Google Sign-up Error:", err);
-        } finally {
+            setError('Google sign-up failed. Please try again.');
             setLoading(false);
         }
     };
+
+    // Demo info
+    const getDemoInfo = () => (
+        <div style={{
+            background: '#f0f9ff',
+            border: '1px solid #0ea5e9',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem',
+            fontSize: '0.9rem'
+        }}>
+            <strong>Demo Signup:</strong><br/>
+            Create a new account or use existing demo accounts for login.
+        </div>
+    );
 
     return (
         <div style={styles.formContainer}>
@@ -186,11 +157,12 @@ const SignupForm = ({ styles }) => {
                 </div>
                 {error && <p style={{ color: 'red', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
                 <div className="form-row" style={{ animationDelay: '0.5s' }}>
+                    {getDemoInfo()}
                     <button type="submit" style={styles.primaryButton} className="primary-button" disabled={loading}>
                         {loading ? "Creating Account..." : "Create Account"}
                     </button>
-                    <button type="button" style={styles.googleButton} className="google-button" onClick={handleGoogleSignup} disabled={loading}>
-                        <GoogleIcon /> Sign up with Google
+                    <button type="button" onClick={handleGoogleSignup} style={styles.googleButton} className="google-button" disabled={loading}>
+                        <GoogleIcon /> Continue with Google
                     </button>
                 </div>
             </form>
@@ -201,28 +173,211 @@ const SignupForm = ({ styles }) => {
 
 // --- Main Page Layout Component ---
 export default function SignupPage() {
+    // Screen size detection
+    const [screenSize, setScreenSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+    const isMobile = screenSize.width <= 768;
+    const isTablet = screenSize.width <= 1024 && screenSize.width > 768;
+
+    useEffect(() => {
+        const handleResize = () => {
+            setScreenSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     const styles = {
-        pageContainer: { fontFamily: '"Poppins", sans-serif', backgroundColor: '#F8FAFC', minHeight: '100vh', display: 'flex', overflow: 'hidden' },
-        imagePanel: { flex: 1.2, position: 'relative', animation: `slide-in-left 1s ease-out forwards`, background: 'url(https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1) center/cover' },
-        imageOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(29, 78, 216, 0.8), rgba(29, 78, 216, 0.2))', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '3rem', color: '#FFFFFF', textAlign: 'center' },
-        overlayTitle: { fontSize: '3rem', fontWeight: 'bold', textShadow: '0 2px 10px rgba(0,0,0,0.3)', animation: 'fade-slide-up 0.8s ease 0.5s forwards', opacity: 0 },
-        overlaySubtitle: { fontSize: '1.2rem', opacity: 0, maxWidth: '400px', marginTop: '1rem', textShadow: '0 2px 5px rgba(0,0,0,0.3)', animation: 'fade-slide-up 0.8s ease 0.7s forwards' },
-        formPanel: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative', overflow: 'hidden' },
-        formContainer: { width: '100%', maxWidth: '400px', zIndex: 1 },
-        logoHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem', animation: 'fade-slide-up 0.8s ease 0.2s forwards', opacity: 0 },
-        brandName: { fontSize: '1.8rem', fontWeight: 'bold', color: '#0F172A' },
-        title: { fontSize: '2.5rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.5rem', animation: 'fade-slide-up 0.8s ease 0.3s forwards', opacity: 0 },
-        subtitle: { color: '#475569', marginBottom: '2.5rem', animation: 'fade-slide-up 0.8s ease 0.4s forwards', opacity: 0 },
-        formLabel: { fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' },
-        input: { width: '100%', padding: '0.9rem 1rem', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' },
-        accountTypeSelector: { display: 'flex', gap: '1px', backgroundColor: '#CBD5E1', borderRadius: '8px', overflow: 'hidden', marginBottom: '1.5rem' },
-        accountTypeButton: (isActive) => ({ flex: 1, padding: '0.8rem', border: 'none', backgroundColor: isActive ? '#FFFFFF' : 'transparent', color: '#0F172A', cursor: 'pointer', fontWeight: isActive ? '600' : '500', transition: 'all 0.2s ease' }),
-        primaryButton: { width: '100%', padding: '0.9rem', backgroundColor: '#3B82F6', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', transition: 'transform 0.2s ease, background-color 0.2s ease' },
-        googleButton: { width: '100%', padding: '0.9rem', backgroundColor: 'transparent', color: '#0F172A', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem' },
-        passwordInputContainer: { position: 'relative', display: 'flex', alignItems: 'center' },
-        eyeButton: { position: 'absolute', right: '1rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748B' },
-        shape1: { position: 'absolute', top: '-50px', right: '-80px', width: '200px', height: '200px', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '50%', filter: 'blur(50px)', animation: 'shape-float 15s ease-in-out infinite alternate' },
-        shape2: { position: 'absolute', top: '80px', right: '-20px', width: '150px', height: '150px', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '50%', filter: 'blur(60px)', animation: 'shape-float 20s ease-in-out infinite alternate-reverse' },
+        pageContainer: { 
+            fontFamily: '"Poppins", sans-serif', 
+            backgroundColor: '#F8FAFC', 
+            minHeight: '100vh', 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            overflow: 'hidden',
+            padding: isMobile ? '1rem' : '0'
+        },
+        imagePanel: { 
+            flex: isMobile ? 'none' : 1.2,
+            height: isMobile ? '200px' : 'auto',
+            position: 'relative', 
+            animation: `slide-in-left 1s ease-out forwards`, 
+            background: 'url(https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1) center/cover',
+            display: isMobile ? 'flex' : 'block',
+            order: isMobile ? 1 : 1
+        },
+        imageOverlay: { 
+            position: 'absolute', 
+            inset: 0, 
+            background: 'linear-gradient(to top, rgba(29, 78, 216, 0.8), rgba(29, 78, 216, 0.2))', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            padding: isMobile ? '1.5rem' : '3rem',
+            color: '#FFFFFF', 
+            textAlign: 'center' 
+        },
+        overlayTitle: { 
+            fontSize: isMobile ? '1.8rem' : isTablet ? '2.5rem' : '3rem',
+            fontWeight: 'bold', 
+            textShadow: '0 2px 10px rgba(0,0,0,0.3)', 
+            animation: 'fade-slide-up 0.8s ease 0.5s forwards', 
+            opacity: 0 
+        },
+        overlaySubtitle: { 
+            fontSize: isMobile ? '0.9rem' : isTablet ? '1.1rem' : '1.2rem',
+            opacity: 0, 
+            maxWidth: isMobile ? '300px' : '400px',
+            marginTop: '1rem', 
+            textShadow: '0 2px 5px rgba(0,0,0,0.3)', 
+            animation: 'fade-slide-up 0.8s ease 0.7s forwards' 
+        },
+        formPanel: { 
+            flex: 1, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: isMobile ? '1.5rem 1rem' : isTablet ? '2rem 1.5rem' : '2rem',
+            position: 'relative', 
+            overflow: 'hidden',
+            order: isMobile ? 2 : 2,
+            minHeight: isMobile ? 'auto' : 'auto'
+        },
+        formContainer: { 
+            width: '100%', 
+            maxWidth: isMobile ? 'none' : '400px',
+            zIndex: 1 
+        },
+        logoHeader: { 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px', 
+            marginBottom: isMobile ? '1.5rem' : '2rem',
+            animation: 'fade-slide-up 0.8s ease 0.2s forwards', 
+            opacity: 0,
+            justifyContent: isMobile ? 'center' : 'flex-start'
+        },
+        brandName: { 
+            fontSize: isMobile ? '1.5rem' : isTablet ? '1.65rem' : '1.8rem',
+            fontWeight: 'bold', 
+            color: '#0F172A' 
+        },
+        title: { 
+            fontSize: isMobile ? '1.8rem' : isTablet ? '2.2rem' : '2.5rem',
+            fontWeight: '700', 
+            color: '#0F172A', 
+            marginBottom: '0.5rem', 
+            animation: 'fade-slide-up 0.8s ease 0.3s forwards', 
+            opacity: 0,
+            textAlign: isMobile ? 'center' : 'left'
+        },
+        subtitle: { 
+            color: '#475569', 
+            marginBottom: isMobile ? '2rem' : '2.5rem',
+            animation: 'fade-slide-up 0.8s ease 0.4s forwards', 
+            opacity: 0,
+            fontSize: isMobile ? '0.9rem' : '1rem',
+            textAlign: isMobile ? 'center' : 'left'
+        },
+        formLabel: { 
+            fontWeight: '600', 
+            marginBottom: '0.5rem', 
+            display: 'block', 
+            fontSize: isMobile ? '0.85rem' : '0.9rem'
+        },
+        input: { 
+            width: '100%', 
+            padding: isMobile ? '0.8rem 1rem' : '0.9rem 1rem',
+            border: '1px solid #CBD5E1', 
+            backgroundColor: '#FFFFFF', 
+            borderRadius: '8px', 
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            boxSizing: 'border-box' 
+        },
+        accountTypeSelector: { 
+            display: 'flex', 
+            gap: '1px', 
+            backgroundColor: '#CBD5E1', 
+            borderRadius: '8px', 
+            overflow: 'hidden', 
+            marginBottom: '1.5rem' 
+        },
+        accountTypeButton: (isActive) => ({ 
+            flex: 1, 
+            padding: isMobile ? '0.7rem' : '0.8rem',
+            border: 'none', 
+            backgroundColor: isActive ? '#FFFFFF' : 'transparent', 
+            color: '#0F172A', 
+            cursor: 'pointer', 
+            fontWeight: isActive ? '600' : '500', 
+            transition: 'all 0.2s ease',
+            fontSize: isMobile ? '0.9rem' : '1rem'
+        }),
+        primaryButton: { 
+            width: '100%', 
+            padding: isMobile ? '0.8rem' : '0.9rem',
+            backgroundColor: '#3B82F6', 
+            color: '#FFFFFF', 
+            border: 'none', 
+            borderRadius: '8px', 
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            fontWeight: '500', 
+            cursor: 'pointer', 
+            transition: 'transform 0.2s ease, background-color 0.2s ease' 
+        },
+        googleButton: { 
+            width: '100%', 
+            padding: isMobile ? '0.8rem' : '0.9rem',
+            backgroundColor: 'transparent', 
+            color: '#0F172A', 
+            border: '1px solid #CBD5E1', 
+            borderRadius: '8px', 
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            fontWeight: '500', 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '0.75rem', 
+            marginTop: '1rem' 
+        },
+        passwordInputContainer: { 
+            position: 'relative', 
+            display: 'flex', 
+            alignItems: 'center' 
+        },
+        eyeButton: { 
+            position: 'absolute', 
+            right: '1rem', 
+            background: 'transparent', 
+            border: 'none', 
+            cursor: 'pointer', 
+            color: '#64748B' 
+        },
+        shape1: { 
+            position: 'absolute', 
+            top: '-50px', 
+            right: '-80px', 
+            width: isMobile ? '150px' : '200px',
+            height: isMobile ? '150px' : '200px',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+            borderRadius: '50%', 
+            filter: 'blur(50px)', 
+            animation: 'shape-float 15s ease-in-out infinite alternate',
+            display: isMobile ? 'none' : 'block'
+        },
+        shape2: { 
+            position: 'absolute', 
+            top: '80px', 
+            right: '-20px', 
+            width: isMobile ? '100px' : '150px',
+            height: isMobile ? '100px' : '150px',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)', 
+            borderRadius: '50%', 
+            filter: 'blur(60px)', 
+            animation: 'shape-float 20s ease-in-out infinite alternate-reverse',
+            display: isMobile ? 'none' : 'block'
+        },
     };
 
     return (

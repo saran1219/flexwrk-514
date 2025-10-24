@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from '../firebase.js';
+import { signInWithEmailAndPassword, doc, getDoc, setDoc, serverTimestamp, signInWithPopup } from '../firebase.js';
+import { auth, db, googleProvider } from '../firebase.js';
 import './LoginPage.css';
 
 // --- SVG Icon Components ---
@@ -19,35 +18,36 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [screenSize, setScreenSize] = useState({
+        width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+        height: typeof window !== 'undefined' ? window.innerHeight : 800
+    });
     
     // Navigate function is used for Google Sign-in redirect
-
     const navigate = useNavigate();
-
-    // Complete redirect flows if a previous Google sign-in used redirect
+    
+    // Screen size detection
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await getRedirectResult(auth);
-                if (res && res.user) {
-                    const user = res.user;
-                    const docRef = doc(db, "users", user.uid);
-                    const docSnap = await getDoc(docRef);
-                    let userRole;
-                    if (!docSnap.exists()) {
-                        userRole = 'freelancer';
-                        await setDoc(docRef, { uid: user.uid, name: user.displayName, email: user.email, userType: userRole, createdAt: serverTimestamp() });
-                    } else {
-                        userRole = docSnap.data().userType;
-                    }
-                    const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
-                    navigate(redirectPath);
-                }
-            } catch (e) {
-                console.warn('No pending redirect result or redirect sign-in failed.', e);
-            }
-        })();
-    }, [navigate]);
+        const handleResize = () => {
+            setScreenSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = screenSize.width <= 768;
+    const isTablet = screenSize.width <= 1024 && screenSize.width > 768;
+
+    // Initialize empty credentials
+    useEffect(() => {
+        // Start with empty form
+        setEmail('');
+        setPassword('');
+    }, []);
 
     const handleEmailSignIn = async (e) => {
         e.preventDefault();
@@ -66,62 +66,218 @@ export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         setError('');
         setLoading(true);
-        
         try {
-            const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            try {
-                const result = await signInWithPopup(auth, provider);
-                if (result) {
-                    const user = result.user;
-                    const docRef = doc(db, "users", user.uid);
-                    const docSnap = await getDoc(docRef);
-
-                    let userRole;
-                    if (!docSnap.exists()) {
-                        // For new users, use the selected userType
-                        userRole = userType;
-                        await setDoc(docRef, {
-                            uid: user.uid,
-                            name: user.displayName,
-                            email: user.email,
-                            userType: userRole,
-                            createdAt: serverTimestamp(),
-                        });
-                    } else {
-                        // For existing users, get their role from Firestore
-                        userRole = docSnap.data().userType;
-                    }
-
-                    const redirectPath = userRole === 'freelancer' ? '/freelancer-dashboard' : '/client-dashboard';
-                    navigate(redirectPath);
-                    return;
-                }
-            } catch (popupErr) {
-                // Fallback to redirect for popup blockers or environments where popups are not allowed
-                if (popupErr?.code === 'auth/popup-blocked' || popupErr?.code === 'auth/cancelled-popup-request') {
-                    await signInWithRedirect(auth, provider);
-                    return;
-                }
-                throw popupErr;
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            // Ensure user profile exists with chosen userType
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            if (!snap.exists()) {
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    name: user.displayName || '',
+                    email: user.email || '',
+                    userType,
+                    createdAt: serverTimestamp(),
+                });
             }
+            // onAuthStateChanged handles navigation
         } catch (err) {
-            let msg = 'Failed to sign in with Google.';
-            if (err?.code === 'auth/unauthorized-domain') {
-                msg = 'Unauthorized domain. Add http://localhost:5173 to Firebase Auth authorized domains.';
-            } else if (err?.code === 'auth/operation-not-allowed') {
-                msg = 'Google sign-in provider is disabled in Firebase Auth settings.';
-            } else if (err?.code === 'auth/popup-closed-by-user') {
-                msg = 'Popup closed before completing sign in.';
-            }
-            setError(msg);
-            console.error("Google Sign-in Error:", err);
-        } finally {
+            setError('Google sign-in failed. Please try again.');
             setLoading(false);
         }
     };
 
-    const styles = { pageContainer: { fontFamily: '"Poppins", sans-serif', backgroundColor: '#F8FAFC', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }, loginCard: { display: 'flex', width: '90%', maxWidth: '1000px', backgroundColor: 'white', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', overflow: 'hidden', animation: 'fade-slide-up 0.8s ease-out forwards', opacity: 0, }, leftPanel: { flex: 1, padding: '3rem', animation: 'fade-in 1s ease-out 0.4s forwards', opacity: 0, }, logoHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2.5rem' }, brandName: { fontSize: '1.8rem', fontWeight: 'bold', color: '#0F172A' }, title: { fontSize: '2rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.5rem' }, subtitle: { color: '#475569', marginBottom: '2rem' }, formLabel: { fontWeight: '600', marginBottom: '0.5rem', display: 'block', fontSize: '0.9rem' }, input: { width: '100%', padding: '0.9rem 1rem', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' }, passwordInputContainer: { position: 'relative', display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }, eyeButton: { position: 'absolute', right: '1rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748B' }, formOptions: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', fontSize: '0.9rem' }, checkboxContainer: { display: 'flex', alignItems: 'center', gap: '0.5rem' }, forgotPassword: { color: '#3B82F6', textDecoration: 'none' }, primaryButton: { width: '100%', padding: '0.9rem', backgroundColor: '#3B82F6', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', transition: 'background-color 0.2s ease' }, googleButton: { width: '100%', padding: '0.9rem', backgroundColor: 'transparent', color: '#0F172A', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '1rem', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem' }, signUpPrompt: { textAlign: 'center', marginTop: '2rem', color: '#475569' }, signUpLink: { color: '#3B82F6', fontWeight: 'bold', textDecoration: 'none' }, rightPanel: { flex: 1.2, background: 'linear-gradient(45deg, #DBEAFE, #EEF2FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', }, illustrationContainer: { width: '100%', height: '100%', position: 'relative', }, illustration: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', }, shape: { boxShadow: '0 10px 20px rgba(0,0,0,0.1)', }, accountTypeSelector: { display: 'flex', gap: '1px', backgroundColor: '#CBD5E1', borderRadius: '8px', overflow: 'hidden', marginBottom: '1.5rem' }, accountTypeButton: (isActive) => ({ flex: 1, padding: '0.8rem', border: 'none', backgroundColor: isActive ? '#FFFFFF' : 'transparent', color: '#0F172A', cursor: 'pointer', fontWeight: isActive ? '600' : '500', transition: 'all 0.2s ease' }), };
+
+    const styles = { 
+        pageContainer: { 
+            fontFamily: '"Poppins", sans-serif', 
+            backgroundColor: '#F8FAFC', 
+            minHeight: '100vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            overflow: 'hidden', 
+            position: 'relative',
+            padding: isMobile ? '1rem' : '2rem'
+        }, 
+        loginCard: { 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            width: isMobile ? '100%' : '90%',
+            maxWidth: isMobile ? 'none' : '1000px',
+            backgroundColor: 'white', 
+            borderRadius: isMobile ? '16px' : '24px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)', 
+            overflow: 'hidden', 
+            animation: 'fade-slide-up 0.8s ease-out forwards', 
+            opacity: 0,
+            minHeight: isMobile ? 'auto' : 'auto'
+        }, 
+        leftPanel: { 
+            flex: 1, 
+            padding: isMobile ? '2rem 1.5rem' : isTablet ? '2.5rem 2rem' : '3rem',
+            animation: 'fade-in 1s ease-out 0.4s forwards', 
+            opacity: 0,
+            order: isMobile ? 2 : 1
+        }, 
+        logoHeader: { 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px', 
+            marginBottom: isMobile ? '1.5rem' : '2.5rem',
+            justifyContent: isMobile ? 'center' : 'flex-start'
+        }, 
+        brandName: { 
+            fontSize: isMobile ? '1.5rem' : isTablet ? '1.65rem' : '1.8rem',
+            fontWeight: 'bold', 
+            color: '#0F172A' 
+        }, 
+        title: { 
+            fontSize: isMobile ? '1.5rem' : isTablet ? '1.75rem' : '2rem',
+            fontWeight: '700', 
+            color: '#0F172A', 
+            marginBottom: '0.5rem',
+            textAlign: isMobile ? 'center' : 'left'
+        }, 
+        subtitle: { 
+            color: '#475569', 
+            marginBottom: isMobile ? '1.5rem' : '2rem',
+            fontSize: isMobile ? '0.9rem' : '1rem',
+            textAlign: isMobile ? 'center' : 'left'
+        }, 
+        formLabel: { 
+            fontWeight: '600', 
+            marginBottom: '0.5rem', 
+            display: 'block', 
+            fontSize: isMobile ? '0.85rem' : '0.9rem'
+        }, 
+        input: { 
+            width: '100%', 
+            padding: isMobile ? '0.8rem 1rem' : '0.9rem 1rem',
+            border: '1px solid #CBD5E1', 
+            backgroundColor: '#FFFFFF', 
+            borderRadius: '8px', 
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            boxSizing: 'border-box' 
+        }, 
+        passwordInputContainer: { 
+            position: 'relative', 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '1.5rem' 
+        }, 
+        eyeButton: { 
+            position: 'absolute', 
+            right: '1rem', 
+            background: 'transparent', 
+            border: 'none', 
+            cursor: 'pointer', 
+            color: '#64748B' 
+        }, 
+        formOptions: { 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: isMobile ? 'flex-start' : 'center',
+            marginBottom: '1.5rem', 
+            fontSize: isMobile ? '0.85rem' : '0.9rem',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '0.75rem' : '0'
+        }, 
+        checkboxContainer: { 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem' 
+        }, 
+        forgotPassword: { 
+            color: '#3B82F6', 
+            textDecoration: 'none',
+            fontSize: isMobile ? '0.85rem' : '0.9rem'
+        }, 
+        primaryButton: { 
+            width: '100%', 
+            padding: isMobile ? '0.8rem' : '0.9rem',
+            backgroundColor: '#3B82F6', 
+            color: '#FFFFFF', 
+            border: 'none', 
+            borderRadius: '8px', 
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            fontWeight: '500', 
+            cursor: 'pointer', 
+            transition: 'background-color 0.2s ease' 
+        }, 
+        googleButton: { 
+            width: '100%', 
+            padding: isMobile ? '0.8rem' : '0.9rem',
+            backgroundColor: 'transparent', 
+            color: '#0F172A', 
+            border: '1px solid #CBD5E1', 
+            borderRadius: '8px', 
+            fontSize: isMobile ? '0.95rem' : '1rem',
+            fontWeight: '500', 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '0.75rem', 
+            marginTop: '1rem' 
+        }, 
+        signUpPrompt: { 
+            textAlign: 'center', 
+            marginTop: isMobile ? '1.5rem' : '2rem',
+            color: '#475569',
+            fontSize: isMobile ? '0.9rem' : '1rem'
+        }, 
+        signUpLink: { 
+            color: '#3B82F6', 
+            fontWeight: 'bold', 
+            textDecoration: 'none' 
+        }, 
+        rightPanel: { 
+            flex: 1.2, 
+            background: 'linear-gradient(45deg, #DBEAFE, #EEF2FF)', 
+            display: isMobile ? 'none' : 'flex',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            position: 'relative',
+            minHeight: isMobile ? '0' : '500px',
+            order: isMobile ? 1 : 2
+        }, 
+        illustrationContainer: { 
+            width: '100%', 
+            height: '100%', 
+            position: 'relative' 
+        }, 
+        illustration: { 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            height: '100%' 
+        }, 
+        shape: { 
+            boxShadow: '0 10px 20px rgba(0,0,0,0.1)' 
+        }, 
+        accountTypeSelector: { 
+            display: 'flex', 
+            gap: '1px', 
+            backgroundColor: '#CBD5E1', 
+            borderRadius: '8px', 
+            overflow: 'hidden', 
+            marginBottom: '1.5rem' 
+        }, 
+        accountTypeButton: (isActive) => ({ 
+            flex: 1, 
+            padding: isMobile ? '0.7rem' : '0.8rem',
+            border: 'none', 
+            backgroundColor: isActive ? '#FFFFFF' : 'transparent', 
+            color: '#0F172A', 
+            cursor: 'pointer', 
+            fontWeight: isActive ? '600' : '500', 
+            transition: 'all 0.2s ease',
+            fontSize: isMobile ? '0.9rem' : '1rem'
+        }) 
+    };
 
     return (
         <>
@@ -161,8 +317,10 @@ export default function LoginPage() {
                             {error && <p style={{color: 'red', textAlign: 'center', marginBottom: '1rem'}}>{error}</p>}
 
                             <button type="submit" style={styles.primaryButton} className="primary-button" disabled={loading}>{loading ? 'Signing In...' : 'Sign in'}</button>
-                            <button type="button" style={styles.googleButton} className="google-button" onClick={handleGoogleSignIn} disabled={loading}><GoogleIcon /> Sign in with Google</button>
                         </form>
+                        <button type="button" onClick={handleGoogleSignIn} style={styles.googleButton} className="google-button" disabled={loading}>
+                            <GoogleIcon /> Continue with Google
+                        </button>
                         
                         <p style={styles.signUpPrompt}>Don't have an account? <Link to="/signup" style={styles.signUpLink}>Sign up</Link></p>
                     </div>

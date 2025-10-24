@@ -27,7 +27,12 @@ const Header = ({ styles, isLoaded }) => {
         </div>
         <div style={styles.navButtons}>
           <Link to="/signup" className="nav-button" style={{ ...styles.button, textDecoration: 'none' }}>Sign Up</Link>
-          <Link to="/login" className="nav-button" style={{ ...styles.button, ...styles.buttonPrimary, textDecoration: 'none' }}>Log In</Link>
+          <div style={styles.loginDropdown}>
+            <div style={styles.loginButtonGroup}>
+              <Link to="/freelancer-login" className="nav-button" style={{ ...styles.loginOption, ...styles.freelancerLogin, textDecoration: 'none' }}>Freelancer Login</Link>
+              <Link to="/client-login" className="nav-button" style={{ ...styles.loginOption, ...styles.clientLogin, textDecoration: 'none' }}>Client Login</Link>
+            </div>
+          </div>
         </div>
       </nav>
     </header>

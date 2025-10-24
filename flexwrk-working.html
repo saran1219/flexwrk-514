@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLEXwrk - Mobile Responsive Freelancing Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8fafc;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        /* Header - Fully responsive */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-menu {
+            display: none;
+            list-style: none;
+            gap: 2rem;
+            margin: 0;
+        }
+        
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .nav-menu a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        
+        /* Mobile Menu */
+        .mobile-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(102, 126, 234, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-menu.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .mobile-menu ul {
+            list-style: none;
+            padding: 0 1rem;
+        }
+        
+        .mobile-menu li {
+            margin: 0.5rem 0;
+        }
+        
+        .mobile-menu a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 1rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .mobile-menu a:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(10px);
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+        }
+        
+        .hero-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        .hero-content p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+        
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            min-width: 180px;
+            text-align: center;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #ff6b6b;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .btn-primary:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: #4facfe;
+        }
+        
+        /* Dashboard Preview */
+        .dashboard-preview {
+            padding: 3rem 0;
+            background: white;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: #2d3748;
+        }
+        
+        .dashboard-container {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-top: 2rem;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .dashboard-title {
+            font-size: 1.5rem;
+            color: #2d3748;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-card.projects { border-left-color: #4facfe; }
+        .stat-card.earnings { border-left-color: #ff6b6b; }
+        .stat-card.clients { border-left-color: #4ecdc4; }
+        .stat-card.rating { border-left-color: #ffe66d; }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        /* Login Form */
+        .login-section {
+            padding: 3rem 0;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .login-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+        }
+        
+        .login-subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f7fafc;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .login-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .success {
+            background: #f0fff4;
+            border: 1px solid #22c55e;
+            color: #15803d;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            color: #dc2626;
+        }
+        
+        .demo-accounts {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            color: #1d4ed8;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .demo-accounts h4 {
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #2d3748;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        /* Responsive Breakpoints */
+        @media (min-width: 768px) {
+            .nav-menu {
+                display: flex;
+            }
+            
+            .hamburger {
+                display: none;
+            }
+            
+            .hero-content h1 {
+                font-size: 3.5rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .dashboard-header {
+                flex-wrap: nowrap;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .hero-content h1 {
+                font-size: 4rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .container {
+                padding: 0 2rem;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4facfe;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <div class="logo">
+                    🚀 FLEXwrk
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#dashboard">Dashboard</a></li>
+                    <li><a href="#login">Login</a></li>
+                </ul>
+                <div class="hamburger" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <div class="mobile-menu" id="mobileMenu">
+                    <ul>
+                        <li><a href="#home" onclick="closeMobileMenu()">Home</a></li>
+                        <li><a href="#dashboard" onclick="closeMobileMenu()">Dashboard</a></li>
+                        <li><a href="#login" onclick="closeMobileMenu()">Login</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Welcome to FLEXwrk</h1>
+                <p>The most advanced mobile-responsive freelancing platform. Connect, collaborate, and create amazing projects with professionals worldwide.</p>
+                <div class="cta-buttons">
+                    <a href="#login" class="btn btn-primary">Start Now</a>
+                    <a href="#dashboard" class="btn btn-secondary">View Demo</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Preview -->
+    <section id="dashboard" class="dashboard-preview">
+        <div class="container">
+            <h2 class="section-title">📱 Mobile-Responsive Dashboard</h2>
+            <div class="dashboard-container">
+                <div class="dashboard-header">
+                    <h3 class="dashboard-title">Freelancer Dashboard</h3>
+                    <div class="user-info">
+                        <div class="avatar">JD</div>
+                        <span>John Doe</span>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card projects">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">Active Projects</div>
+                    </div>
+                    <div class="stat-card earnings">
+                        <div class="stat-number">$5,430</div>
+                        <div class="stat-label">This Month</div>
+                    </div>
+                    <div class="stat-card clients">
+                        <div class="stat-number">28</div>
+                        <div class="stat-label">Happy Clients</div>
+                    </div>
+                    <div class="stat-card rating">
+                        <div class="stat-number">4.9★</div>
+                        <div class="stat-label">Rating</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; padding: 2rem; background: white; border-radius: 10px;">
+                    <p><strong>✅ Mobile Responsive Design Working!</strong></p>
+                    <p>Resize your browser or view on mobile to see responsive breakpoints in action.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Section -->
+    <section id="login" class="login-section">
+        <div class="container">
+            <div class="login-container">
+                <h2 class="login-title">Welcome Back</h2>
+                <p class="login-subtitle">Sign in to your account</p>
+                
+                <div class="demo-accounts">
+                    <h4>Demo Accounts:</h4>
+                    <p><strong>Freelancer:</strong> freelancer@demo.com / password123</p>
+                    <p><strong>Client:</strong> client@demo.com / password123</p>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        Sign In
+                    </button>
+                </form>
+                
+                <div id="loginResult"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 FLEXwrk - Mobile Responsive Freelancing Platform</p>
+            <p>📱 Works on all devices | 🚀 Lightning fast | 🔒 Secure</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu functionality
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const hamburger = document.querySelector('.hamburger');
+            
+            mobileMenu.classList.toggle('show');
+            hamburger.classList.toggle('active');
+        }
+        
+        function closeMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const hamburger = document.querySelector('.hamburger');
+            
+            mobileMenu.classList.remove('show');
+            hamburger.classList.remove('active');
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const hamburger = document.querySelector('.hamburger');
+            
+            if (!mobileMenu.contains(event.target) && !hamburger.contains(event.target)) {
+                mobileMenu.classList.remove('show');
+                hamburger.classList.remove('active');
+            }
+        });
+        
+        // Working login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginResult = document.getElementById('loginResult');
+            
+            // Disable button and show loading
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner"></span>Signing In...';
+            
+            // Simulate authentication delay
+            setTimeout(() => {
+                // Demo authentication logic
+                const validAccounts = {
+                    'freelancer@demo.com': { password: 'password123', type: 'freelancer', name: 'John Doe' },
+                    'client@demo.com': { password: 'password123', type: 'client', name: 'Jane Smith' },
+                    'demo@flexwrk.com': { password: 'demo123', type: 'freelancer', name: 'Demo User' }
+                };
+                
+                if (validAccounts[email] && validAccounts[email].password === password) {
+                    // Successful login
+                    const user = validAccounts[email];
+                    loginResult.innerHTML = `
+                        <div class="success">
+                            ✅ Login successful!<br>
+                            Welcome back, ${user.name} (${user.type})<br>
+                            <small>Mobile responsive authentication working perfectly!</small>
+                        </div>
+                    `;
+                    
+                    // Simulate redirect after success
+                    setTimeout(() => {
+                        loginResult.innerHTML = `
+                            <div class="success">
+                                🚀 Redirecting to ${user.type} dashboard...<br>
+                                <small>This demo shows the login functionality is working!</small>
+                            </div>
+                        `;
+                    }, 2000);
+                    
+                } else {
+                    // Failed login
+                    loginResult.innerHTML = `
+                        <div class="error">
+                            ❌ Invalid credentials!<br>
+                            <small>Try the demo accounts above or check your email/password.</small>
+                        </div>
+                    `;
+                }
+                
+                // Re-enable button
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'Sign In';
+                
+            }, 1000); // 1 second delay to simulate server response
+        });
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Responsive testing
+        function logResponsiveState() {
+            const width = window.innerWidth;
+            if (width <= 768) {
+                console.log('📱 Mobile view active (<= 768px)');
+            } else if (width <= 1024) {
+                console.log('📱 Tablet view active (769-1024px)');
+            } else {
+                console.log('💻 Desktop view active (> 1024px)');
+            }
+        }
+        
+        // Log responsive state on load and resize
+        window.addEventListener('load', logResponsiveState);
+        window.addEventListener('resize', logResponsiveState);
+        
+        // Auto-fill demo account
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').value = 'freelancer@demo.com';
+            document.getElementById('password').value = 'password123';
+        });
+        
+        console.log('🚀 FLEXwrk Mobile-Responsive Platform Loaded Successfully!');
+        console.log('📱 Try resizing the browser to see responsive breakpoints');
+        console.log('🔐 Demo login accounts are pre-filled');
+    </script>
+</body>
+</html>

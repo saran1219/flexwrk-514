@@ -20,6 +20,13 @@ service firebase.storage {
       allow write: if isSignedIn() && request.auth.uid == uid;
     }
 
+    // Portfolio project images uploaded by freelancers
+    // Path convention: portfolio/{freelancerId}/{timestamp}_{filename}
+    match /portfolio/{uid}/{fileName} {
+      allow read: if true; // Portfolio images should be publicly readable
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
     // Enhanced messaging system file uploads
     // Path convention: chats/{chatId}/attachments/{userId}_{timestamp}_{filename}
     match /chats/{chatId}/attachments/{fileName} {

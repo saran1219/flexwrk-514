@@ -1,6 +1,7 @@
 // src/pages/HomePage.jsx
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './HomePage.css';
@@ -62,6 +63,11 @@ export default function HomePage() {
     navButtons: { display: 'flex', alignItems: 'center', gap: '1rem' },
     button: { padding: '0.6rem 1.2rem', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF', cursor: 'pointer', fontWeight: '500', transition: 'transform 0.2s ease, box-shadow 0.2s ease' },
     buttonPrimary: { backgroundColor: '#1F2937', color: '#FFFFFF', border: 'none' },
+    loginDropdown: { position: 'relative' },
+    loginButtonGroup: { display: 'flex', gap: '0.5rem' },
+    loginOption: { padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease', fontSize: '0.9rem' },
+    freelancerLogin: { backgroundColor: '#22C55E', color: '#FFFFFF', border: 'none' },
+    clientLogin: { backgroundColor: '#3B82F6', color: '#FFFFFF', border: 'none' },
     heroSection: { display: 'flex', justifyContent: 'center', padding: '4rem 7% 6rem', minHeight: '90vh', background: 'linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%)' },
     heroContent: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '1200px', gap: '2rem' },
     heroLeft: { flex: 1.1 },
@@ -138,8 +144,8 @@ export default function HomePage() {
                     </h1>
                     <p style={styles.subheadline}>Discover the world's largest freelance marketplace, where businesses and skilled professionals connect to achieve amazing results.</p>
                     <div style={styles.heroActionButtons}>
-                        <button style={styles.actionButton} className="action-button">Hire a Freelancer</button>
-                        <button style={{...styles.actionButton, backgroundColor: '#1f2937'}} className="action-button">Earn Money Freelancing</button>
+                        <Link to="/client-login" style={{...styles.actionButton, textDecoration: 'none', display: 'inline-block'}} className="action-button">Hire a Freelancer</Link>
+                        <Link to="/freelancer-login" style={{...styles.actionButton, backgroundColor: '#1f2937', textDecoration: 'none', display: 'inline-block'}} className="action-button">Earn Money Freelancing</Link>
                     </div>
                 </div>
                 <div style={styles.heroRight} className="hero-right">
